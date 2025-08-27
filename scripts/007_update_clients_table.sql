@@ -1,4 +1,15 @@
-ALTER TABLE public.leads
+ALTER TABLE public.clients
+ADD COLUMN IF NOT EXISTS connection_type TEXT,
+ADD COLUMN IF NOT EXISTS business_activity TEXT,
+ADD COLUMN IF NOT EXISTS interested_product TEXT,
+ADD COLUMN IF NOT EXISTS verbal_agreements TEXT,
+ADD COLUMN IF NOT EXISTS personality_type TEXT,
+ADD COLUMN IF NOT EXISTS communication_style TEXT,
+ADD COLUMN IF NOT EXISTS key_phrases TEXT,
+ADD COLUMN IF NOT EXISTS strengths TEXT,
+ADD COLUMN IF NOT EXISTS weaknesses TEXT,
+ADD COLUMN IF NOT EXISTS opportunities TEXT,
+ADD COLUMN IF NOT EXISTS threats TEXT,
 ADD COLUMN IF NOT EXISTS relationship_type TEXT,
 ADD COLUMN IF NOT EXISTS quantified_problem TEXT,
 ADD COLUMN IF NOT EXISTS conservative_goal TEXT,

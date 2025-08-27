@@ -2,12 +2,18 @@
 
 import React from "react"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Mic, User, CheckCircle, Sparkles, Telescope, BarChart2, Handshake, FileText, Home } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -26,15 +32,35 @@ const sectionIcons: { [key: number]: React.ElementType } = {
   6: Sparkles,
 }
 
+const productOptions = [
+  "Tu Negocio 24/7 - Página Web",
+  "Tu Empresa Online - Página web + Chatbot",
+  "Tu Sucursal Online - Sitio web + Chatbot",
+  "Tu Contacto Profesional - Tarjeta Digital Profesional",
+  "Tarjeta Digital",
+  "Estrategia Ganar Clientes - Planificación Estratégica de Marketing",
+  "Plan para Salir en Google - Estudio de palabras clave + Estrategia de Posicionamiento + Levantamiento de Información",
+  "Análisis de la Competencia - Levantamiento de información",
+  "Consultoria Empresarial - Mentoria para iniciar un proyecto",
+  "Auditoría SEO y rediseño de un sitio web (No incluye estudio de palabras claves)",
+  "Ahorra tiempo y dinero automatizando procesos",
+  "Automatización adicional",
+  "Asistente 24/7",
+  "App para tu Negocio",
+  "Consulta Médica para tu Negocio",
+  "Plantillas para Páginas Web",
+  "Instalación de Plantillas para páginas web",
+  "Auditoria web Automatizada",
+  "Páginas web \"GO 2025\" - Tu primera página web",
+  "Socio para Crecer - Posicionamiento Web",
+  "El Antes de Endeudarte - Estudio de Factibilidad",
+  "Procesos Lentos y Caros - Reingeniería de Procesos",
+];
+
+
 export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [animation, setAnimation] = useState("animate-slide-in-right")
-  interface Product {
-  [key: string]: string;
-}
-
-// ... inside component
-  const [products, setProducts] = useState<Product[]>([])
   const [isRecording, setIsRecording] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -53,7 +79,7 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
     businessActivity: "",
     relationship_type: "",
     // Step 2
-    interestedProduct: [] as string[],
+    interestedProduct: "",
     quantifiedProblem: "",
     conservativeGoal: "",
     verbal_agreements: "",
@@ -78,23 +104,6 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
     opportunities: "",
     threats: "",
   })
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products');
-        const data = await response.json();
-        if (response.ok && data.products) {
-          setProducts(data.products);
-        } else {
-          console.error("Failed to fetch products:", data.error);
-        }
-      } catch (error) {
-        console.error("Failed to fetch products", error);
-      }
-    };
-    fetchProducts();
-  }, []);
 
   const steps = [
     { id: 1, title: "Información Fundamental" },
@@ -126,17 +135,7 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    if (field === "interestedProduct") {
-      const productName = value as string;
-      setFormData((prev) => {
-        const newProducts = prev.interestedProduct.includes(productName)
-          ? prev.interestedProduct.filter((p) => p !== productName)
-          : [...prev.interestedProduct, productName];
-        return { ...prev, interestedProduct: newProducts };
-      });
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value as string }));
-    }
+    setFormData((prev) => ({ ...prev, [field]: value as string }));
   };
 
   const startRecording = async (field: string) => {
@@ -195,14 +194,29 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
   }
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
-    // ... submission logic to be updated to handle all new fields ...
-    console.log("Form data to submit:", formData)
-    setTimeout(() => {
-        setIsSubmitting(false)
-        handleNext()
-    }, 2000)
-  }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        handleNext(); // Move to success step
+      } else {
+        const errorData = await response.json();
+        alert(`Error al crear el lead: ${errorData.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Ocurrió un error al enviar el formulario. Revisa la consola para más detalles.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const renderField = (fieldName: keyof typeof formData, label: string, type: string = "text") => (
     <div className="relative form-field mb-6">
@@ -238,28 +252,21 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
     </div>
   )
 
-  const renderCheckboxGroup = (fieldName: "interestedProduct", label: string, options: Product[]) => {
-    const productNameKey = "Nombre del Producto o Servicio";
-    return (
-        <div className="form-field mb-6 space-y-2">
-        <Label className="text-sm font-semibold text-foreground pl-1">{label}</Label>
-        <div className="space-y-2 rounded-xl border-2 border-[#e8e6e3] p-4">
-            {options.length > 0 ? options.map((option) => (
-            <div key={option.Source_ID || option[productNameKey]} className="flex items-center space-x-2">
-                <Checkbox
-                id={`${fieldName}-${option[productNameKey]}`}
-                checked={formData.interestedProduct.includes(option[productNameKey])}
-                onCheckedChange={() => handleInputChange(fieldName, option[productNameKey])}
-                />
-                <Label htmlFor={`${fieldName}-${option[productNameKey]}`} className="font-normal cursor-pointer">
-                {option[productNameKey]}
-                </Label>
-            </div>
-            )) : <p className="text-sm text-muted-foreground">Cargando productos...</p>}
-        </div>
-        </div>
-    );
-  }
+  const renderSelect = (fieldName: "interestedProduct", label: string, options: string[]) => (
+    <div className="form-field mb-6 space-y-2">
+      <Label className="text-sm font-semibold text-foreground pl-1">{label}</Label>
+      <Select onValueChange={(value) => handleInputChange(fieldName, value)} value={formData[fieldName]}>
+        <SelectTrigger className="w-full p-4 border-2 border-[#e8e6e3] rounded-xl text-base bg-white transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(255,107,53,0.2)] h-auto">
+          <SelectValue placeholder="Selecciona un producto/servicio" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(option => (
+            <SelectItem key={option} value={option}>{option}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   const renderStep = () => {
     switch (currentStep) {
@@ -282,7 +289,7 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
         return (
           <>
             <h3 className="text-lg font-semibold text-center mb-4">Diagnóstico y Necesidades</h3>
-            {renderCheckboxGroup("interestedProduct", "Producto/Servicio de Interés", products)}
+            {renderSelect("interestedProduct", "Producto/Servicio de Interés", productOptions)}
             {renderTextarea("quantifiedProblem", "Problema Cuantificado")}
             {renderTextarea("conservativeGoal", "Objetivo Conservador")}
             {renderTextarea("verbal_agreements", "Acuerdos Verbales Previos")}

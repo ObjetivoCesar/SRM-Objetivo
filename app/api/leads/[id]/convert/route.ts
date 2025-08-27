@@ -10,7 +10,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   try {
-    const supabase = await createClient(cookies())
+    const cookieStore = cookies()
+    const supabase = createClient(cookieStore)
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
     // 1. Fetch the lead data
     const { data: lead, error: leadError } = await supabase
@@ -27,47 +34,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json({ success: false, error: 'Lead already converted' }, { status: 400 })
     }
 
-    // 2. Prepare a notes field with extra details
-    const notes = `
-      Información Adicional del Lead Convertido:
-      =========================================
-      Actividad del Negocio: ${lead.business_activity || 'N/A'}
-      Producto de Interés: ${lead.interested_product || 'N/A'}
-      Tipo de Conexión: ${lead.connection_type || 'N/A'}
-      
-      PERFIL HUMANO:
-      - Personalidad: ${lead.personality_type || 'N/A'}
-      - Estilo de Comunicación: ${lead.communication_style || 'N/A'}
-      - Frases Clave: ${lead.key_phrases || 'N/A'}
-
-      DIAGNÓSTICO Y METAS:
-      - Problema Cuantificado: ${lead.quantified_problem || 'N/A'}
-      - Meta Conservadora: ${lead.conservative_goal || 'N/A'}
-      - Acuerdos Verbales: ${lead.verbal_agreements || 'N/A'}
-
-      DATOS DEL NEGOCIO:
-      - Años en Negocio: ${lead.years_in_business || 'N/A'}
-      - N° Empleados: ${lead.number_of_employees || 'N/A'}
-      - N° Sucursales: ${lead.number_of_branches || 'N/A'}
-      - Clientes/Mes: ${lead.current_clients_per_month || 'N/A'}
-      - Ticket Promedio: ${lead.average_ticket || 'N/A'}
-      - Seguidores Facebook: ${lead.facebook_followers || 'N/A'}
-
-      CONTEXTO ESTRATÉGICO:
-      - Competencia: ${lead.known_competition || 'N/A'}
-      - Temporada Alta: ${lead.high_season || 'N/A'}
-      - Fechas Críticas: ${lead.critical_dates || 'N/A'}
-      - Logros: ${lead.other_achievements || 'N/A'}
-      - Reconocimientos: ${lead.specific_recognitions || 'N/A'}
-
-      ANÁLISIS FODA:
-      - Fortalezas: ${lead.strengths || 'N/A'}
-      - Oportunidades: ${lead.opportunities || 'N/A'}
-      - Debilidades: ${lead.weaknesses || 'N/A'}
-      - Amenazas: ${lead.threats || 'N/A'}
-    `
-
-    // 3. Create a new client
+    // 2. Create a new client
     const { data: newClient, error: clientError } = await supabase
       .from('clients')
       .insert({
@@ -76,8 +43,32 @@ export async function POST(request: Request, { params }: { params: { id: string 
         email: lead.email,
         phone: lead.phone,
         address: lead.address,
-        notes: notes,
-        // created_by should be the current user, but auth is not fully implemented here
+        created_by: user.id,
+        connection_type: lead.connection_type,
+        business_activity: lead.business_activity,
+        interested_product: lead.interested_product,
+        verbal_agreements: lead.verbal_agreements,
+        personality_type: lead.personality_type,
+        communication_style: lead.communication_style,
+        key_phrases: lead.key_phrases,
+        strengths: lead.strengths,
+        weaknesses: lead.weaknesses,
+        opportunities: lead.opportunities,
+        threats: lead.threats,
+        relationship_type: lead.relationship_type,
+        quantified_problem: lead.quantified_problem,
+        conservative_goal: lead.conservative_goal,
+        years_in_business: lead.years_in_business,
+        number_of_employees: lead.number_of_employees,
+        number_of_branches: lead.number_of_branches,
+        current_clients_per_month: lead.current_clients_per_month,
+        average_ticket: lead.average_ticket,
+        known_competition: lead.known_competition,
+        high_season: lead.high_season,
+        critical_dates: lead.critical_dates,
+        facebook_followers: lead.facebook_followers,
+        other_achievements: lead.other_achievements,
+        specific_recognitions: lead.specific_recognitions,
       })
       .select()
       .single()
@@ -86,7 +77,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       throw new Error(`Failed to create client: ${clientError.message}`)
     }
 
-    // 4. Update the lead's status
+    // 3. Update the lead's status
     const { error: updateError } = await supabase
       .from('leads')
       .update({ status: 'Convertido' })

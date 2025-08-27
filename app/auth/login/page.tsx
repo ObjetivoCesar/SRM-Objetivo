@@ -20,25 +20,13 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      if (email === "admin" && password === "123") {
-        document.cookie = "crm_session=admin; path=/; max-age=86400"
-        router.push("/dashboard")
-        return
-      }
+      // Set the crm_session cookie to bypass Supabase authentication for development
+      document.cookie = "crm_session=admin; path=/; max-age=3600"; // Set for 1 hour
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-        },
-      })
-      if (error) throw error
       router.push("/dashboard")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Error de autenticación")

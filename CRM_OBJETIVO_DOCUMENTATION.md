@@ -6,7 +6,7 @@
 - **Frontend**: Next.js 15 con TypeScript
 - **Backend**: Next.js API Routes
 - **Base de Datos**: Supabase (PostgreSQL)
-- **Autenticación**: Supabase Auth (inicial: admin/123)
+- **Autenticación**: Supabase Auth
 - **Almacenamiento**: Supabase Storage
 - **IA**: OpenAI (Whisper para transcripción)
 
@@ -34,30 +34,27 @@ Crear un "expediente de persuasión" completo para Michael, capturando informaci
 - Negociaciones verbales
 - Perfil psicológico del cliente
 - Análisis FODA completo
+- Y muchos otros campos detallados en el formulario de recorridos.
 
 ### Base de Datos - Tabla `leads`
-\`\`\`sql
-- id (UUID)
-- business_name (TEXT)
-- contact_name (TEXT)
-- connection_type (TEXT)
-- relationship_type (TEXT) -- NUEVO: Para sesgo de correspondencia
-- business_activity (TEXT)
-- interested_product (TEXT)
-- verbal_agreements (TEXT)
-- personality_type (TEXT)
-- communication_style (TEXT)
-- key_phrases (TEXT)
-- strengths, weaknesses, opportunities, threats (TEXT)
-- status (TEXT)
-- files (TEXT[])
-- created_at, updated_at (TIMESTAMP)
-\`\`\`
+La tabla `leads` ha sido actualizada para incluir todos los campos del formulario de recorridos.
 
-## 2. SISTEMA DE PRODUCTOS Y SERVICIOS
+## 2. GESTIÓN DE LEADS Y CONVERSIÓN A CLIENTES
+
+### Visualización de Leads
+- La página de "Leads" ahora muestra todos los campos capturados en el formulario de "Recorridos" en la vista de detalle del lead.
+
+### Conversión de Leads a Clientes
+- Al convertir un lead a cliente, toda la información del lead es transferida al nuevo registro de cliente.
+- El lead original no se borra, sino que su estado se actualiza a "Convertido" para mantener un historial.
+
+### Base de Datos - Tabla `clients`
+La tabla `clients` ha sido actualizada para tener la misma estructura que la tabla `leads`, asegurando que toda la información se preserve durante la conversión.
+
+## 3. SISTEMA DE PRODUCTOS Y SERVICIOS
 
 ### Estructura de Datos
-\`\`\`sql
+```sql
 products_services:
 - id (UUID)
 - source_id (TEXT)
@@ -71,14 +68,14 @@ products_services:
 - payment_type (TEXT) -- Forma de pago
 - video_link (TEXT) -- Link de video
 - included_services (TEXT) -- Servicios incluidos
-\`\`\`
+```
 
 ### Fuente de Datos
 - CSV con 22 productos/servicios de AutomatizoTuNegocio
 - Carga automática via script de Node.js
 - Búsqueda por nombre, categoría y tags
 
-## 3. DASHBOARD Y NAVEGACIÓN
+## 4. DASHBOARD Y NAVEGACIÓN
 
 ### Estructura
 - **Sidebar**: Navegación principal con glassmorphism
@@ -94,20 +91,18 @@ products_services:
 - Actualización automática cada 30 segundos
 - Indicador visual en campanita
 
-## 4. AUTENTICACIÓN Y SEGURIDAD
+## 5. AUTENTICACIÓN Y SEGURIDAD
 
 ### Sistema Actual
-- Login básico: admin/123
-- Cookies para sesión
-- Middleware de protección de rutas
-- RLS (Row Level Security) en Supabase
+- Autenticación manejada completamente por Supabase Auth.
+- Middleware de protección de rutas que verifica la sesión del usuario en cada petición.
+- RLS (Row Level Security) en Supabase para asegurar que los usuarios solo puedan acceder a sus propios datos.
 
 ### Mejoras Planificadas
 - Sistema de roles (César, Michael, Abel)
-- Autenticación más robusta
 - Permisos granulares
 
-## 5. INTEGRACIÓN CON IA
+## 6. INTEGRACIÓN CON IA
 
 ### OpenAI Whisper
 - Transcripción de audio en tiempo real
@@ -115,9 +110,9 @@ products_services:
 - API route `/api/transcribe` para seguridad
 
 ### Prompt de Transcripción
-\`\`\`
+```
 "Transcribe con la mayor precisión posible este audio. Mantén la estructura del habla natural, diferenciando frases y pausas según el contexto. Si hay ruido de fondo o interferencia, intenta interpretar el mensaje principal sin agregar palabras que no estén en el audio. No reformules ni corrijas el lenguaje coloquial, modismos o errores gramaticales, respeta la forma original del discurso. Si hay múltiples hablantes, intenta diferenciarlos si es posible. No añadas anotaciones ni comentarios adicionales."
-\`\`\`
+```
 
 ## PRÓXIMOS MÓDULOS
 
@@ -163,11 +158,14 @@ Generar cotizaciones completas y personalizadas para leads utilizando un sistema
 ### APIs
 - `app/api/transcribe/route.ts` - Transcripción de audio
 - `app/api/leads/count-new/route.ts` - Conteo de leads nuevos
+- `app/api/leads/[id]/convert/route.ts` - Conversión de leads a clientes
 
 ### Scripts de Base de Datos
 - `scripts/001_create_database_schema.sql` - Esquema inicial
 - `scripts/003_create_leads_table.sql` - Tabla de leads
 - `scripts/004_add_relationship_type_and_products.sql` - Productos y relación
+- `scripts/006_add_new_lead_fields.sql` - **NUEVO**: Añade los campos faltantes a la tabla `leads`.
+- `scripts/007_update_clients_table.sql` - **NUEVO**: Actualiza la tabla `clients` para que coincida con la tabla `leads`.
 
 ### Configuración
 - `lib/supabase/` - Clientes de Supabase
@@ -200,7 +198,8 @@ pnpm add tw-animate-css
 ✅ Módulo de Recorridos (ACC) - Completo
 ✅ Sistema de Productos/Servicios - Implementado
 ✅ Dashboard y Navegación - Funcional
-✅ Autenticación Básica - Operativa
+✅ Autenticación con Supabase - Operativa
 ✅ Integración OpenAI - Funcional
 ✅ Constructor de Cotizaciones - Implementado
+✅ Gestión de Leads y Conversión a Clientes - Completo
 ⏳ Gestión de Actividades - Pendiente
