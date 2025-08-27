@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, Phone, MapPin, Calendar, User } from "lucide-react"
+import { Eye, FileText, Phone, MapPin, Calendar, User, UserCheck, Loader2 } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
 
 interface Lead {
@@ -32,6 +32,7 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [isConverting, setIsConverting] = useState(false)
 
   useEffect(() => {
     fetchLeads()
@@ -55,6 +56,31 @@ export default function LeadsPage() {
     }
   }
 
+  const handleConvertToClient = async () => {
+    if (!selectedLead) return
+
+    setIsConverting(true)
+    try {
+      const response = await fetch(`/api/leads/${selectedLead.id}/convert`, {
+        method: 'POST',
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        alert("¡Lead convertido a cliente exitosamente!")
+        setSelectedLead(null) // Close modal
+        fetchLeads() // Refresh the leads list
+      } else {
+        alert(`Error al convertir el lead: ${result.error}`)
+      }
+    } catch (error) {
+      alert("Ocurrió un error de red. Inténtalo de nuevo.")
+      console.error("Conversion error:", error)
+    } finally {
+      setIsConverting(false)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "nuevo":
@@ -63,7 +89,7 @@ export default function LeadsPage() {
         return "bg-blue-500"
       case "cotizado":
         return "bg-yellow-500"
-      case "cerrado":
+      case "Convertido":
         return "bg-purple-500"
       default:
         return "bg-gray-500"
@@ -114,7 +140,7 @@ export default function LeadsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-foreground">{lead.business_name}</CardTitle>
-                  <Badge className={`${getStatusColor(lead.status)} text-white`}>{lead.status}</Badge>
+                  <Badge className={`${getStatusColor(lead.status)} text-white capitalize`}>{lead.status}</Badge>
                 </div>
                 <CardDescription className="flex items-center space-x-2">
                   <User className="h-4 w-4" />
@@ -227,13 +253,21 @@ export default function LeadsPage() {
                 </div>
 
                 <div className="flex space-x-3 pt-4 border-t border-primary/20">
+                  <Button
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={handleConvertToClient}
+                    disabled={selectedLead.status === 'Convertido' || isConverting}
+                  >
+                    {isConverting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <UserCheck className="h-4 w-4 mr-2" />
+                    )}
+                    {selectedLead.status === 'Convertido' ? 'Ya Convertido' : 'Convertir a Cliente'}
+                  </Button>
                   <Button className="flex-1">
                     <FileText className="h-4 w-4 mr-2" />
                     Crear Cotización
-                  </Button>
-                  <Button variant="outline">
-                    <Phone className="h-4 w-4 mr-2" />
-                    Contactar
                   </Button>
                 </div>
               </CardContent>

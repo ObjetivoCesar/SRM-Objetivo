@@ -124,30 +124,29 @@ products_services:
 ### Módulo 2: Constructor de Cotizaciones (Para Michael)
 
 ### Propósito
-Generar cotizaciones completas y personalizadas para leads en un solo paso, utilizando inteligencia artificial para redactar el contenido persuasivo.
+Generar cotizaciones completas y personalizadas para leads utilizando un sistema de plantillas editables.
 
 ### Funcionalidades
-- **Generación Unificada**: La cotización completa (introducción, propuesta de valor, cierre con ROI) se genera en una única llamada a la IA.
-- **Personalización Profunda**: Utiliza toda la información detallada del lead (obtenida del Módulo 1) para adaptar el contenido de la cotización.
-- **Catálogo de Servicios Local**: El catálogo de productos y servicios se carga directamente desde el archivo `lib/prompts/Servicios y Productos.csv`, asegurando que la IA siempre use la información más actualizada y precisa de los servicios ofrecidos.
-- **Configuración Flexible**: Permite ajustar parámetros como el "gatillo mental" para influir en el tono y enfoque de la cotización.
-- **Edición y Guardado**: El contenido generado puede ser revisado y editado directamente en la interfaz antes de ser guardado en la base de datos.
+- **Selección de Plantillas**: Permite escoger entre varias plantillas predefinidas según el perfil del cliente (emocional, lógico, etc.).
+- **Personalización Manual**: Carga la plantilla seleccionada en un editor de texto, reemplazando automáticamente variables (como nombre del cliente, nombre del negocio) con la información del lead.
+- **Edición y Guardado**: El contenido puede ser revisado y editado libremente en la interfaz antes de ser guardado en la base de datos.
+- **Información del Lead a la Vista**: Muestra la información clave del lead seleccionado para facilitar la personalización manual de la cotización.
+
+**Nota sobre la Generación con IA**: La funcionalidad de generación de cotizaciones mediante Inteligencia Artificial (OpenAI) ha sido temporalmente desactivada. El código y los prompts se conservan en `lib/openai/` y `lib/prompts/` para una posible reactivación o reutilización en el futuro. El sistema actual prioriza un enfoque manual y controlado a través de plantillas.
 
 ### Componentes Clave
-- **Frontend**: `app/cotizaciones/page.tsx` (Interfaz de usuario para selección de lead, configuración y visualización/edición de la cotización).
-- **Backend API**: `app/api/quotations/generate/route.ts` (Endpoint que orquesta la generación de la cotización completa).
-- **Lógica de IA**: `lib/openai/quotation-generator.ts` (Clase que interactúa con la API de OpenAI, lee el prompt unificado y el catálogo de servicios, y construye el mensaje para la IA).
-- **Prompt Principal**: `lib/prompts/prompt_unified_quotation.md` (Contiene todas las instrucciones y la estructura para la generación de la cotización completa).
-- **Catálogo de Productos**: `lib/prompts/Servicios y Productos.csv` (Archivo CSV que contiene la información detallada de todos los productos y servicios).
+- **Frontend**: `app/cotizaciones/page.tsx` (Interfaz de usuario para selección de lead, selección de plantilla y edición de la cotización).
+- **Plantillas**: Archivos Markdown en `lib/templates/` que sirven como base para las cotizaciones.
+- **Lógica de Negocio**: La lógica para leer plantillas y reemplazar variables se encuentra directamente en el componente del frontend.
 
 ### Flujo de Generación
-1.  El usuario selecciona un lead y configura los parámetros iniciales en `app/cotizaciones/page.tsx`.
-2.  Al hacer clic en "Generar Cotización Completa", se envía una solicitud a `app/api/quotations/generate/route.ts` con el ID del lead y la configuración.
-3.  El API obtiene los datos completos del lead desde Supabase.
-4.  La clase `QuotationGenerator` lee el `prompt_unified_quotation.md` y el `Servicios y Productos.csv`.
-5.  Se construye un mensaje de sistema integral para OpenAI, que incluye el prompt, todos los datos del lead y el catálogo de servicios.
-6.  OpenAI genera la cotización completa en un solo bloque de texto.
-7.  La cotización generada se devuelve al frontend para su visualización, edición y posterior guardado.
+1.  El usuario selecciona un lead de la lista.
+2.  El sistema muestra la información relevante del lead.
+3.  El usuario elige una de las plantillas disponibles.
+4.  Al hacer clic en "Cargar Plantilla", el contenido de la plantilla se carga en un editor de texto.
+5.  El sistema reemplaza automáticamente las variables conocidas (ej. `{{contact_name}}`) en la plantilla con los datos del lead.
+6.  El usuario edita y personaliza el texto final en el editor.
+7.  Una vez satisfecho, el usuario guarda la cotización, que se almacena en la base de datos.
 
 ### Módulo 3: Gestión de Actividades y Notificaciones
 - Tareas automáticas

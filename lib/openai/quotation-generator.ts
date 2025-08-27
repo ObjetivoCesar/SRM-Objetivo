@@ -28,16 +28,36 @@ const getProductCatalog = (): string => {
 
 export interface LeadData {
   id: string;
-  business_name: string;
-  owner_name: string;
-  contact_info: any;
-  business_activity: string;
-  connection_type: string;
-  personality_type: string;
-  communication_style: string;
-  relationship_type: string;
-  foda_analysis: any;
-  phase_responses: any;
+  business_name?: string;
+  contact_name?: string;
+  phone?: string;
+  email?: string;
+  business_activity?: string;
+  relationship_type?: string;
+  personality_type?: string;
+  communication_style?: string;
+  interested_product?: string[];
+  strengths?: string;
+  weaknesses?: string;
+  opportunities?: string;
+  threats?: string;
+  created_at?: string;
+  business_location?: string;
+  years_in_business?: number;
+  number_of_employees?: number;
+  number_of_branches?: number;
+  current_clients_per_month?: number;
+  average_ticket?: number;
+  quantified_problem?: string;
+  conservative_goal?: string;
+  verbal_agreements?: string;
+  known_competition?: string;
+  facebook_followers?: number;
+  other_achievements?: string;
+  specific_recognitions?: string;
+  high_season?: string;
+  critical_dates?: string;
+  key_phrases?: string;
 }
 
 export interface QuotationConfig {
@@ -80,6 +100,45 @@ ${catalog}
     } catch (error) {
       console.error("Error generating full quotation:", error);
       throw new Error("Failed to generate full quotation");
+    }
+  }
+
+  async generateDescription(leadData: Partial<LeadData>, templateId: string): Promise<string> {
+    const promptMap: { [key: string]: string } = {
+      'plantilla_1_emocional_extrovertido': 'prompt_desc_emocional_extrovertido',
+      'plantilla_2_emocional_introvertido': 'prompt_desc_emocional_introvertido',
+      'plantilla_3_logico_extrovertido': 'prompt_desc_logico_extrovertido',
+      'plantilla_4_logico_introvertido': 'prompt_desc_logico_introvertido',
+    };
+
+    const promptName = promptMap[templateId];
+    if (!promptName) {
+      throw new Error("Invalid templateId for description generation");
+    }
+
+    let prompt = getPromptContent(promptName);
+
+    // Replace placeholders in the prompt
+    for (const key in leadData) {
+        const typedKey = key as keyof LeadData;
+        const value = leadData[typedKey] || '';
+        prompt = prompt.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+    }
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 100,
+      });
+
+      return response.choices[0]?.message?.content?.trim().replace(/^"|"$/g, '') || "";
+    } catch (error) {
+      console.error("Error generating description:", error);
+      throw new Error("Failed to generate description");
     }
   }
 }
