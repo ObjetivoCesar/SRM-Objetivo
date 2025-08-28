@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { QuotationGenerator } from '@/lib/openai/quotation-generator'
 
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = createServerClient()
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .select('*')

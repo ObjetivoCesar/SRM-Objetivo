@@ -69,6 +69,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         facebook_followers: lead.facebook_followers,
         other_achievements: lead.other_achievements,
         specific_recognitions: lead.specific_recognitions,
+        quotation: lead.quotation,
       })
       .select()
       .single()

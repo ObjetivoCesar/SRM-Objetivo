@@ -126,6 +126,7 @@ ${catalog}
     }
 
     try {
+      console.log("Prompt sent to OpenAI:", prompt);
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -135,9 +136,19 @@ ${catalog}
         max_tokens: 100,
       });
 
+      console.log("Full OpenAI response:", JSON.stringify(response, null, 2));
+
       return response.choices[0]?.message?.content?.trim().replace(/^"|"$/g, '') || "";
     } catch (error) {
       console.error("Error generating description:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        if (error.stack) {
+          console.error("Error stack:", error.stack);
+        }
+      } else {
+        console.error("Non-Error object caught:", error);
+      }
       throw new Error("Failed to generate description");
     }
   }

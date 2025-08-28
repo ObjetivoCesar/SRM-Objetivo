@@ -124,7 +124,7 @@ Generar cotizaciones completas y personalizadas para leads utilizando un sistema
 ### Funcionalidades
 - **Selección de Plantillas**: Permite escoger entre varias plantillas predefinidas según el perfil del cliente (emocional, lógico, etc.).
 - **Personalización Manual**: Carga la plantilla seleccionada en un editor de texto, reemplazando automáticamente variables (como nombre del cliente, nombre del negocio) con la información del lead.
-- **Edición y Guardado**: El contenido puede ser revisado y editado libremente en la interfaz antes de ser guardado en la base de datos.
+- **Edición y Guardado**: El contenido puede ser revisado y editado libremente en la interfaz. Al guardar, la cotización se almacena directamente en una nueva columna `quotation` dentro de la tabla `leads`, sobreescribiendo cualquier versión anterior para mantener siempre la más actualizada.
 - **Información del Lead a la Vista**: Muestra la información clave del lead seleccionado para facilitar la personalización manual de la cotización.
 
 **Nota sobre la Generación con IA**: La funcionalidad de generación de cotizaciones mediante Inteligencia Artificial (OpenAI) ha sido temporalmente desactivada. El código y los prompts se conservan en `lib/openai/` y `lib/prompts/` para una posible reactivación o reutilización en el futuro. El sistema actual prioriza un enfoque manual y controlado a través de plantillas.
@@ -166,6 +166,7 @@ Generar cotizaciones completas y personalizadas para leads utilizando un sistema
 - `scripts/004_add_relationship_type_and_products.sql` - Productos y relación
 - `scripts/006_add_new_lead_fields.sql` - **NUEVO**: Añade los campos faltantes a la tabla `leads`.
 - `scripts/007_update_clients_table.sql` - **NUEVO**: Actualiza la tabla `clients` para que coincida con la tabla `leads`.
+- `scripts/008_add_quotation_to_leads_and_clients.sql` - **NUEVO**: Añade una columna `quotation` a las tablas `leads` y `clients` para almacenar el texto de la cotización.
 
 ### Configuración
 - `lib/supabase/` - Clientes de Supabase

@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { FileText, Plus, Save, BookOpen, Loader2, Sparkles } from "lucide-react"
+import { FileText, Plus, Save, BookOpen, Loader2, Sparkles, Search } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { ProductSearchCard } from "@/components/quotations/product-search-card"
 
 interface Lead {
   id: string
@@ -44,6 +44,7 @@ interface Lead {
   high_season: string
   critical_dates: string
   key_phrases: string
+  quotation?: string
 }
 
 const templates = [
@@ -72,12 +73,24 @@ export default function CotizacionesPage() {
   
   const [quotationContent, setQuotationContent] = useState<string>("")
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
+  const [productSearchQuery, setProductSearchQuery] = useState("")
+  const [productSearchResults, setProductSearchResults] = useState("")
+  const [isSearchingProducts, setIsSearchingProducts] = useState(false)
   
   const supabase = createClient()
 
   useEffect(() => {
     loadLeads()
   }, [])
+
+  useEffect(() => {
+    const lead = leads.find((l) => l.id === selectedLead);
+    if (lead && lead.quotation) {
+      setQuotationContent(lead.quotation);
+    } else {
+      setQuotationContent("");
+    }
+  }, [selectedLead, leads]);
 
   const loadLeads = async () => {
     const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false })
@@ -158,26 +171,48 @@ export default function CotizacionesPage() {
     if (!selectedLead || !quotationContent) return
 
     try {
-      const { data, error } = await supabase.from("quotations").insert({
-        title: `Cotización para ${leads.find((l) => l.id === selectedLead)?.business_name}`,
-        description: quotationContent.substring(0, 255),
-        notes: quotationContent,
-        status: "draft",
-        created_by: "00000000-0000-0000-0000-000000000000", // Admin user
-        subtotal: 0,
-        tax_rate: 0,
-        tax_amount: 0,
-        total: 0,
-      })
+      const { data, error } = await supabase
+        .from("leads")
+        .update({ quotation: quotationContent, status: 'cotizado' })
+        .eq("id", selectedLead)
 
       if (!error) {
         alert("✅ Cotización guardada exitosamente")
+        // Optionally, refresh the leads data to reflect the change
+        loadLeads()
       } else {
         console.error("Error saving quotation:", error)
         alert("❌ Error guardando cotización")
       }
     } catch (error) {
       console.error("Error saving quotation:", error)
+    }
+  }
+
+  const handleProductSearch = async () => {
+    if (!productSearchQuery) {
+      alert("Por favor, ingresa un nombre de producto para buscar.")
+      return
+    }
+    setIsSearchingProducts(true)
+    setProductSearchResults("")
+    try {
+      const response = await fetch("/api/products/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: productSearchQuery }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        setProductSearchResults(result.productData || "Producto no encontrado.")
+      } else {
+        alert(`❌ Error buscando producto: ${result.error}`)
+      }
+    } catch (error) {
+      console.error("Error calling product search API:", error)
+      alert(`❌ Error de conexión al buscar producto.`)
+    } finally {
+      setIsSearchingProducts(false)
     }
   }
 
@@ -223,6 +258,14 @@ export default function CotizacionesPage() {
                   </Select>
                 </div>
 
+                {selectedLeadData && (
+                  <div className="mb-4">
+                    <Label className="text-sm font-semibold text-foreground">Personalidad del Lead:</Label>
+                    <Badge variant="secondary" className="ml-2 text-base">
+                      {selectedLeadData.personality_type}
+                    </Badge>
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="template-select">2. Plantilla</Label>
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
@@ -279,111 +322,82 @@ export default function CotizacionesPage() {
             </Card>
 
             {selectedLeadData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Información del Lead</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm">
-                    <Accordion type="multiple" className="w-full">
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger>Información General</AccordionTrigger>
-                            <AccordionContent className="space-y-3 pt-3">
-                                <InfoField label="Negocio" value={selectedLeadData.business_name} />
-                                <InfoField label="Contacto" value={selectedLeadData.contact_name} />
-                                <InfoField label="Teléfono" value={selectedLeadData.phone} />
-                                <InfoField label="Email" value={selectedLeadData.email} />
-                                <InfoField label="Ubicación" value={selectedLeadData.business_location} />
-                                <InfoField label="Actividad" value={selectedLeadData.business_activity} />
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-2">
-                            <AccordionTrigger>Perfil y Relación</AccordionTrigger>
-                            <AccordionContent className="space-y-3 pt-3">
-                                <div className="flex gap-2 flex-wrap">
-                                    <Badge variant="secondary">{selectedLeadData.personality_type}</Badge>
-                                    <Badge variant="outline">{selectedLeadData.communication_style}</Badge>
-                                    <Badge variant="outline">{selectedLeadData.relationship_type}</Badge>
-                                </div>
-                                <InfoField label="Frases Clave" value={selectedLeadData.key_phrases} />
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-3">
-                            <AccordionTrigger>Diagnóstico y Metas</AccordionTrigger>
-                            <AccordionContent className="space-y-3 pt-3">
-                                <InfoField label="Productos de Interés" value={selectedLeadData.interested_product} />
-                                <InfoField label="Problema Cuantificado" value={selectedLeadData.quantified_problem} />
-                                <InfoField label="Meta Conservadora" value={selectedLeadData.conservative_goal} />
-                                <InfoField label="Acuerdos Verbales" value={selectedLeadData.verbal_agreements} />
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-4">
-                            <AccordionTrigger>Datos del Negocio</AccordionTrigger>
-                            <AccordionContent className="space-y-3 pt-3">
-                                <InfoField label="Años en Negocio" value={selectedLeadData.years_in_business} />
-                                <InfoField label="N° de Empleados" value={selectedLeadData.number_of_employees} />
-                                <InfoField label="N° de Sucursales" value={selectedLeadData.number_of_branches} />
-                                <InfoField label="Clientes/Mes" value={selectedLeadData.current_clients_per_month} />
-                                <InfoField label="Ticket Promedio" value={selectedLeadData.average_ticket} />
-                                <InfoField label="Seguidores Facebook" value={selectedLeadData.facebook_followers} />
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-5">
-                            <AccordionTrigger>Contexto Estratégico</AccordionTrigger>
-                            <AccordionContent className="space-y-3 pt-3">
-                                <InfoField label="Competencia Conocida" value={selectedLeadData.known_competition} />
-                                <InfoField label="Temporada Alta" value={selectedLeadData.high_season} />
-                                <InfoField label="Fechas Críticas" value={selectedLeadData.critical_dates} />
-                                <InfoField label="Logros y Reconocimientos" value={selectedLeadData.other_achievements} />
-                                <InfoField label="Reconocimientos Específicos" value={selectedLeadData.specific_recognitions} />
-                            </AccordionContent>
-                        </AccordionItem>
-                         <AccordionItem value="item-6">
-                            <AccordionTrigger>Análisis FODA</AccordionTrigger>
-                            <AccordionContent className="space-y-3 pt-3">
-                                <InfoField label="Fortalezas" value={selectedLeadData.strengths} />
-                                <InfoField label="Oportunidades" value={selectedLeadData.opportunities} />
-                                <InfoField label="Debilidades" value={selectedLeadData.weaknesses} />
-                                <InfoField label="Amenazas" value={selectedLeadData.threats} />
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </CardContent>
-              </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Información del Lead</CardTitle>
+                        <CardDescription>
+                            Detalles completos del lead seleccionado.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <InfoField label="Nombre de Contacto" value={selectedLeadData.contact_name} />
+                        <InfoField label="Email" value={selectedLeadData.email} />
+                        <InfoField label="Teléfono" value={selectedLeadData.phone} />
+                        <InfoField label="Actividad del Negocio" value={selectedLeadData.business_activity} />
+                        <InfoField label="Ubicación" value={selectedLeadData.business_location} />
+                        <InfoField label="Años en el Mercado" value={selectedLeadData.years_in_business} />
+                        <InfoField label="Número de Empleados" value={selectedLeadData.number_of_employees} />
+                        <InfoField label="Sucursales" value={selectedLeadData.number_of_branches} />
+                        <InfoField label="Clientes Actuales por Mes" value={selectedLeadData.current_clients_per_month} />
+                        <InfoField label="Ticket Promedio" value={selectedLeadData.average_ticket} />
+                        <InfoField label="Problema Cuantificado" value={selectedLeadData.quantified_problem} />
+                        <InfoField label="Meta Conservadora" value={selectedLeadData.conservative_goal} />
+                        <InfoField label="Acuerdos Verbales" value={selectedLeadData.verbal_agreements} />
+                        <InfoField label="Competencia Conocida" value={selectedLeadData.known_competition} />
+                        <InfoField label="Seguidores en Facebook" value={selectedLeadData.facebook_followers} />
+                        <InfoField label="Otros Logros" value={selectedLeadData.other_achievements} />
+                        <InfoField label="Reconocimientos Específicos" value={selectedLeadData.specific_recognitions} />
+                        <InfoField label="Temporada Alta" value={selectedLeadData.high_season} />
+                        <InfoField label="Fechas Críticas" value={selectedLeadData.critical_dates} />
+                        <InfoField label="Frases Clave" value={selectedLeadData.key_phrases} />
+                        <InfoField label="Productos de Interés" value={selectedLeadData.interested_product} />
+                        <InfoField label="Fortalezas" value={selectedLeadData.strengths} />
+                        <InfoField label="Oportunidades" value={selectedLeadData.opportunities} />
+                        <InfoField label="Debilidades" value={selectedLeadData.weaknesses} />
+                        <InfoField label="Amenazas" value={selectedLeadData.threats} />
+                    </CardContent>
+                </Card>
             )}
+
+            <ProductSearchCard
+              productSearchQuery={productSearchQuery}
+              setProductSearchQuery={setProductSearchQuery}
+              productSearchResults={productSearchResults}
+              isSearchingProducts={isSearchingProducts}
+              handleProductSearch={handleProductSearch}
+            />
           </div>
 
-          {/* Columna Derecha: Editor */}
+          {/* Columna Derecha: Editor de Cotización */}
           <div className="lg:col-span-2">
             <Card className="h-full">
-              <CardHeader>
-                <div className="flex items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="space-y-1.5">
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
                     Editor de Cotización
                   </CardTitle>
-                  <Button onClick={saveQuotation} disabled={!quotationContent}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Guardar Cotización
-                  </Button>
+                  <CardDescription>
+                    Modifica el contenido antes de guardarlo.
+                  </CardDescription>
                 </div>
-                 <CardDescription>
-                    {quotationContent ? "Edita el contenido y guárdalo cuando esté listo." : "La plantilla cargada aparecerá aquí."}
-                </CardDescription>
+                <Button onClick={saveQuotation} size="sm" disabled={!quotationContent}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar
+                </Button>
               </CardHeader>
               <CardContent>
-                {isLoadingTemplate && (
-                    <div className="flex items-center justify-center h-96">
-                        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
-                    </div>
-                )}
-                {!isLoadingTemplate && (
-                    <Textarea
-                        value={quotationContent}
-                        onChange={(e) => setQuotationContent(e.target.value)}
-                        placeholder="Completa los pasos de la izquierda para cargar una plantilla..."
-                        className="min-h-[70vh] font-mono text-sm"
-                        disabled={!quotationContent}
-                    />
+                {isLoadingTemplate ? (
+                  <div className="flex items-center justify-center h-96">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <Textarea
+                    value={quotationContent}
+                    onChange={(e) => setQuotationContent(e.target.value)}
+                    placeholder="Aquí aparecerá el contenido de la plantilla seleccionada..."
+                    className="h-[calc(100vh-20rem)] resize-none border rounded-md p-4 text-sm leading-relaxed"
+                  />
                 )}
               </CardContent>
             </Card>
