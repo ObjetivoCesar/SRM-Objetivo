@@ -1,15 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, MapPin, Clock, User, Home } from "lucide-react"
 import { LeadCaptureForm } from "./lead-capture-form"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 
-export function RecorridosLayout() {
+export function RecorridosLayout({ leadId }: { leadId?: string }) {
   const [showNewLeadForm, setShowNewLeadForm] = useState(false)
   const [activeLead, setActiveLead] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (leadId) {
+      setActiveLead(leadId)
+      setShowNewLeadForm(true)
+    }
+  }, [leadId])
 
   // Mock data for recent leads
   const recentLeads = [
@@ -36,12 +43,14 @@ export function RecorridosLayout() {
 
   const handleSelectLead = (leadId: string) => {
     setActiveLead(leadId)
-    setShowNewLeadForm(false)
+    setShowNewLeadForm(true)
   }
 
   const handleBack = () => {
     setShowNewLeadForm(false)
     setActiveLead(null)
+    // a back should redirect to the leads page
+    window.location.href = '/leads'
   }
 
   if (showNewLeadForm || activeLead) {

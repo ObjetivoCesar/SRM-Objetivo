@@ -1,8 +1,7 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -105,6 +104,56 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
     threats: "",
   })
 
+  useEffect(() => {
+    if (leadId) {
+      const fetchLeadData = async () => {
+        try {
+          const response = await fetch(`/api/leads/${leadId}`)
+          if (response.ok) {
+            const data = await response.json()
+            setFormData({
+              businessName: data.business_name || "",
+              contactName: data.contact_name || "",
+              phone: data.phone || "",
+              email: data.email || "",
+              address: data.address || "",
+              business_location: data.business_location || "",
+              businessActivity: data.business_activity || "",
+              relationship_type: data.relationship_type || "",
+              interestedProduct: data.interested_product || "",
+              quantifiedProblem: data.quantified_problem || "",
+              conservativeGoal: data.conservative_goal || "",
+              verbal_agreements: data.verbal_agreements || "",
+              years_in_business: data.years_in_business?.toString() || "",
+              number_of_employees: data.number_of_employees?.toString() || "",
+              number_of_branches: data.number_of_branches?.toString() || "",
+              current_clients_per_month: data.current_clients_per_month?.toString() || "",
+              average_ticket: data.average_ticket?.toString() || "",
+              known_competition: data.known_competition || "",
+              high_season: data.high_season || "",
+              critical_dates: data.critical_dates || "",
+              facebook_followers: data.facebook_followers?.toString() || "",
+              other_achievements: data.other_achievements || "",
+              specific_recognitions: data.specific_recognitions || "",
+              personalityType: data.personality_type || "",
+              communicationStyle: data.communication_style || "",
+              keyPhrases: data.key_phrases || "",
+              strengths: data.strengths || "",
+              weaknesses: data.weaknesses || "",
+              opportunities: data.opportunities || "",
+              threats: data.threats || "",
+            })
+          } else {
+            alert("Error al cargar los datos del lead.")
+          }
+        } catch (error) {
+          alert("Error al cargar los datos del lead.")
+        }
+      }
+      fetchLeadData()
+    }
+  }, [leadId])
+
   const steps = [
     { id: 1, title: "Información Fundamental" },
     { id: 2, title: "Diagnóstico y Necesidades" },
@@ -196,8 +245,11 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
+      const url = leadId ? `/api/leads/${leadId}` : '/api/leads';
+      const method = leadId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -208,7 +260,7 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
         handleNext(); // Move to success step
       } else {
         const errorData = await response.json();
-        alert(`Error al crear el lead: ${errorData.error || 'Error desconocido'}`);
+        alert(`Error al ${leadId ? 'actualizar' : 'crear'} el lead: ${errorData.error || 'Error desconocido'}`);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -339,7 +391,7 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
                 <h3 className="text-2xl font-bold text-foreground mb-4">Revisar y Enviar</h3>
                 <p className="text-muted-foreground mb-6">Asegúrate que toda la información sea correcta.</p>
                 <Button onClick={handleSubmit} className="w-full py-4 text-base font-semibold bg-gradient-to-r from-[#ff6b35] to-[#ffd23f] text-white rounded-xl shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-                    {isSubmitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/> : 'Finalizar y Crear Expediente'}
+                    {isSubmitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/> : leadId ? 'Actualizar Expediente' : 'Finalizar y Crear Expediente'}
                 </Button>
             </div>
         )
@@ -349,7 +401,7 @@ export function LeadCaptureForm({ leadId, onBack }: LeadCaptureFormProps) {
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
                     <CheckCircle className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">¡Expediente Creado!</h3>
+                <h3 className="text-2xl font-bold text-foreground mb-4">¡Expediente {leadId ? 'Actualizado' : 'Creado'}!</h3>
                 <Button onClick={onBack} className="w-full py-4 text-base font-semibold bg-gradient-to-r from-[#ff6b35] to-[#ffd23f] text-white rounded-xl shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     Volver a la lista
                 </Button>

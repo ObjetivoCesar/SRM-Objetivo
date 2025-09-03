@@ -315,6 +315,11 @@ export default function LeadsPage() {
                       Crear Cotización
                     </Button>
                   </Link>
+                  <Link href={`/recorridos?leadId=${selectedLead.id}`} className='flex-1'>
+                    <Button variant="outline" className='w-full'>
+                      Editar
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
